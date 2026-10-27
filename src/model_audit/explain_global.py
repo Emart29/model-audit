@@ -77,6 +77,25 @@ def shap_importance(
     return np.abs(_positive_class(values)).mean(axis=0), method
 
 
+def _score(model, X: np.ndarray, y: np.ndarray) -> float:
+    from sklearn.metrics import accuracy_score, r2_score, roc_auc_score
+
+    y = np.asarray(y)
+    if np.unique(y).size <= 2:
+        if hasattr(model, "predict_proba") or callable(model):
+            try:
+                return float(roc_auc_score(y, _predict_positive(model)(X)))
+            except Exception:
+                pass
+        prediction = model.predict(X) if hasattr(model, "predict") else model(X)
+        prediction = np.asarray(prediction).ravel()
+        if prediction.dtype.kind == "f":
+            prediction = (prediction >= 0.5).astype(int)
+        return float(accuracy_score(y, prediction))
+    prediction = model.predict(X) if hasattr(model, "predict") else model(X)
+    return float(r2_score(y, np.asarray(prediction).ravel()))
+
+
 def permutation_importance(
     model,
     X: np.ndarray,
@@ -85,13 +104,24 @@ def permutation_importance(
     n_repeats: int = 5,
     seed: int = 0,
 ) -> np.ndarray:
-    from sklearn.inspection import permutation_importance as sklearn_pi
+    """Drop in the score when one feature's values are shuffled.
 
-    scoring = "roc_auc" if hasattr(model, "predict_proba") else None
-    result = sklearn_pi(
-        model, X, y, n_repeats=n_repeats, random_state=seed, scoring=scoring, n_jobs=1
-    )
-    return np.asarray(result.importances_mean, dtype=float)
+    Implemented here rather than calling scikit-learn's, so it also works on a
+    plain callable or an adapter that has no ``fit`` method.
+    """
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y)
+    rng = np.random.default_rng(seed)
+    baseline = _score(model, X, y)
+    importances = np.zeros(X.shape[1], dtype=float)
+    for column in range(X.shape[1]):
+        drops = []
+        for _ in range(n_repeats):
+            shuffled = X.copy()
+            rng.shuffle(shuffled[:, column])
+            drops.append(baseline - _score(model, shuffled, y))
+        importances[column] = float(np.mean(drops))
+    return importances
 
 
 def rank_importance(

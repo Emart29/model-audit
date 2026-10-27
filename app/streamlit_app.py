@@ -7,6 +7,7 @@ Run from the repository root:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -22,7 +23,7 @@ from model_audit.preprocessing import fit_encoder  # noqa: E402
 IMMUTABLE_DEFAULT = ["age", "sex", "race", "native-country", "marital-status", "relationship"]
 
 
-@st.cache_resource(show_spinner="Training the model…")
+@st.cache_resource(show_spinner="Training the modelâ€¦")
 def build(sample: int) -> tuple[ModelAuditor, pd.DataFrame]:
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.model_selection import train_test_split
@@ -55,7 +56,7 @@ def build(sample: int) -> tuple[ModelAuditor, pd.DataFrame]:
     return auditor, raw_test
 
 
-@st.cache_resource(show_spinner="Training the synthetic model…")
+@st.cache_resource(show_spinner="Training the synthetic modelâ€¦")
 def build_synthetic() -> tuple[ModelAuditor, pd.DataFrame]:
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import train_test_split
@@ -99,7 +100,7 @@ def fairness_frame(audits) -> pd.DataFrame:
 
 
 def main() -> None:
-    st.set_page_config(page_title="model-audit", page_icon="🔍", layout="wide")
+    st.set_page_config(page_title="model-audit", page_icon="ðŸ”", layout="wide")
     st.title("model-audit")
     st.caption("Explain any model, audit it for bias, and generate the model card.")
 
@@ -138,8 +139,8 @@ def main() -> None:
             if key in metrics:
                 column.metric(key.upper(), f"{metrics[key]:.3f}")
         st.write(
-            f"{auditor.X.shape[0]:,} held-out rows · {auditor.X.shape[1]} features · "
-            f"ECE {calibration['ece']:.3f} · Brier {calibration['brier']:.3f}"
+            f"{auditor.X.shape[0]:,} held-out rows Â· {auditor.X.shape[1]} features Â· "
+            f"ECE {calibration['ece']:.3f} Â· Brier {calibration['brier']:.3f}"
         )
         left, right = st.columns([3, 2])
         with left:
@@ -155,10 +156,10 @@ def main() -> None:
                 st.dataframe(
                     bins.assign(gap=lambda d: (d["accuracy"] - d["confidence"]).round(3)),
                     hide_index=True,
-                    use_container_width=True,
+                    width="stretch",
                 )
         st.subheader("Checks")
-        st.dataframe(fairness_frame(audits), hide_index=True, use_container_width=True)
+        st.dataframe(fairness_frame(audits), hide_index=True, width="stretch")
 
     with fairness:
         for audit in audits:
@@ -183,10 +184,10 @@ def main() -> None:
                     for g in audit.groups
                 ]
             )
-            st.dataframe(groups, hide_index=True, use_container_width=True)
+            st.dataframe(groups, hide_index=True, width="stretch")
             st.bar_chart(groups.set_index("group")[["positive rate"]])
             checks = fairness_frame([audit])
-            st.dataframe(checks, hide_index=True, use_container_width=True)
+            st.dataframe(checks, hide_index=True, width="stretch")
 
     with explain:
         index = st.number_input(
@@ -194,8 +195,8 @@ def main() -> None:
         )
         explanation = auditor.local(int(index))
         st.write(
-            f"Prediction **{explanation.prediction}** · probability "
-            f"**{explanation.probability:.3f}** · surrogate R² {explanation.r2:.3f}"
+            f"Prediction **{explanation.prediction}** Â· probability "
+            f"**{explanation.probability:.3f}** Â· surrogate RÂ² {explanation.r2:.3f}"
         )
         contributions = pd.DataFrame(
             [{"feature": c.feature, "contribution": c.value} for c in explanation.contributions[:12]]
@@ -208,7 +209,7 @@ def main() -> None:
             anchor = auditor.anchors(int(index))
             st.code(anchor.text())
             st.write(
-                f"precision {anchor.precision:.3f} · coverage {anchor.coverage:.3f} · "
+                f"precision {anchor.precision:.3f} Â· coverage {anchor.coverage:.3f} Â· "
                 f"n={anchor.n_matched}"
             )
             if not anchor.meets_target:
@@ -219,9 +220,9 @@ def main() -> None:
                 results = auditor.counterfactuals(int(index), k=3, immutable=immutable)
                 if results:
                     for result in results:
-                        changes = ", ".join(f"{f}: {a!r} → {b!r}" for f, a, b in result.changes)
+                        changes = ", ".join(f"{f}: {a!r} â†’ {b!r}" for f, a, b in result.changes)
                         st.write(
-                            f"{changes} — p {result.original_probability:.3f} → "
+                            f"{changes} â€” p {result.original_probability:.3f} â†’ "
                             f"{result.counterfactual_probability:.3f}"
                         )
                 else:
@@ -230,7 +231,7 @@ def main() -> None:
                 st.info(str(error))
 
         st.subheader("Row")
-        st.dataframe(raw.iloc[[int(index)]], hide_index=True, use_container_width=True)
+        st.dataframe(raw.iloc[[int(index)]], hide_index=True, width="stretch")
 
     with card:
         markdown = auditor.model_card()
@@ -239,7 +240,7 @@ def main() -> None:
         text = render_markdown(markdown)
         st.download_button("Download Markdown", text, file_name="model-card.md")
         st.download_button(
-            "Download JSON", __import__("json").dumps(markdown.to_dict(), indent=2), file_name="model-card.json"
+            "Download JSON", json.dumps(markdown.to_dict(), indent=2), file_name="model-card.json"
         )
         st.markdown(text)
 

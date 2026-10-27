@@ -164,6 +164,16 @@ auditor.anchors(0)                 # rule + precision + coverage
 auditor.report("reports")          # md + json + pdf
 ```
 
+PyTorch models return logits and have no `predict_proba`, so wrap the module once:
+
+```python
+from model_audit import ModelAuditor, TorchClassifier
+
+auditor = ModelAuditor(TorchClassifier(net), X, y, feature_names=names)
+```
+
+XGBoost and LightGBM work as-is: SHAP picks them up through `get_booster()`.
+
 Streamlit UI:
 
 ```bash
@@ -196,10 +206,12 @@ model-audit/
 │   ├── model_card.py       # JSON / Markdown / PDF
 │   ├── report.py           # the full audit report
 │   ├── preprocessing.py    # Encoder: raw frame -> matrix
+│   ├── adapters.py         # TorchClassifier: module -> sklearn protocol
 │   ├── api.py              # FastAPI
 │   └── cli.py              # demo + serve
 ├── app/streamlit_app.py
-├── tests/                  # 37 tests, known-answer where possible
+├── examples/               # a committed audit report and model card
+├── tests/                  # 38 tests, known-answer where possible
 └── reports/                # generated (gitignored)
 ```
 
@@ -211,7 +223,7 @@ model-audit/
 pytest
 ```
 
-37 tests. The fairness and calibration tests use constructed cases with hand-computed
+38 tests. The fairness and calibration tests use constructed cases with hand-computed
 answers (a 0.9-confidence model that is right half the time has ECE 0.4 and Brier 0.41). The
 explanation tests check properties rather than snapshots: the local surrogate recovers the
 sign of a linear model's coefficients, its contributions reconstruct the prediction, and the

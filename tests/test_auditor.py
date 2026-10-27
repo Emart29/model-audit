@@ -102,3 +102,23 @@ def test_string_labels_are_mapped_to_binary():
     assert set(np.unique(auditor.y)) == {0, 1}
     # A constant 0.5 scores as a positive prediction, so accuracy is the base rate.
     assert auditor.metrics()["accuracy"] == pytest.approx(frame["hired"].mean())
+
+
+def test_torch_adapter_makes_a_module_auditable():
+    import torch
+    from torch import nn
+
+    from model_audit.adapters import TorchClassifier
+
+    torch.manual_seed(0)
+    module = nn.Sequential(nn.Linear(4, 8), nn.ReLU(), nn.Linear(8, 2))
+    clf = TorchClassifier(module)
+    X = np.random.default_rng(0).normal(size=(60, 4))
+
+    proba = clf.predict_proba(X)
+    assert proba.shape == (60, 2)
+    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-5)
+
+    auditor = ModelAuditor(clf, X, (X[:, 0] > 0).astype(int), feature_names=[f"f{i}" for i in range(4)])
+    assert "accuracy" in auditor.metrics()
+    assert auditor.global_importance(method="permutation")

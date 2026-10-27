@@ -1,5 +1,6 @@
 """model-audit: explain any model, audit it for bias, and write the model card."""
 
+from .adapters import TorchClassifier
 from .auditor import ModelAuditor
 from .preprocessing import Encoder, fit_encoder
 from .types import (
@@ -16,6 +17,7 @@ from .types import (
 
 __all__ = [
     "ModelAuditor",
+    "TorchClassifier",
     "Encoder",
     "fit_encoder",
     "Anchor",

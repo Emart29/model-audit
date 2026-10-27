@@ -1,0 +1,343 @@
+{
+  "model": {
+    "name": "adult-income-hgb",
+    "version": "0.1.0",
+    "description": "A classification model audited with model-audit. Predicts income > 50K.",
+    "intended_use": "Decision support only. Not validated for autonomous decisions affecting people.",
+    "limitations": "Metrics are measured on the evaluation split named in the report and do not transfer to populations that differ from it. Fairness metrics are descriptive: they quantify gaps in this dataset, they do not establish legally protected status or prove discrimination."
+  },
+  "task": "classification",
+  "target": "income > 50K",
+  "dataset": {
+    "name": "UCI Adult",
+    "source": "OpenML adult v2 (48,842 rows), 25% held-out split",
+    "n_rows": 12211,
+    "n_features": 91,
+    "features": [
+      "age",
+      "education-num",
+      "capital-gain",
+      "capital-loss",
+      "hours-per-week",
+      "workclass=Federal-gov",
+      "workclass=Local-gov",
+      "workclass=Never-worked",
+      "workclass=Private",
+      "workclass=Self-emp-inc",
+      "workclass=Self-emp-not-inc",
+      "workclass=State-gov",
+      "workclass=Without-pay",
+      "workclass=__missing__",
+      "marital-status=Divorced",
+      "marital-status=Married-AF-spouse",
+      "marital-status=Married-civ-spouse",
+      "marital-status=Married-spouse-absent",
+      "marital-status=Never-married",
+      "marital-status=Separated",
+      "marital-status=Widowed",
+      "occupation=Adm-clerical",
+      "occupation=Armed-Forces",
+      "occupation=Craft-repair",
+      "occupation=Exec-managerial",
+      "occupation=Farming-fishing",
+      "occupation=Handlers-cleaners",
+      "occupation=Machine-op-inspct",
+      "occupation=Other-service",
+      "occupation=Priv-house-serv",
+      "occupation=Prof-specialty",
+      "occupation=Protective-serv",
+      "occupation=Sales",
+      "occupation=Tech-support",
+      "occupation=Transport-moving",
+      "occupation=__missing__",
+      "relationship=Husband",
+      "relationship=Not-in-family",
+      "relationship=Other-relative",
+      "relationship=Own-child",
+      "relationship=Unmarried",
+      "relationship=Wife",
+      "race=Amer-Indian-Eskimo",
+      "race=Asian-Pac-Islander",
+      "race=Black",
+      "race=Other",
+      "race=White",
+      "sex=Female",
+      "sex=Male",
+      "native-country=Cambodia",
+      "native-country=Canada",
+      "native-country=China",
+      "native-country=Columbia",
+      "native-country=Cuba",
+      "native-country=Dominican-Republic",
+      "native-country=Ecuador",
+      "native-country=El-Salvador",
+      "native-country=England",
+      "native-country=France",
+      "native-country=Germany",
+      "native-country=Greece",
+      "native-country=Guatemala",
+      "native-country=Haiti",
+      "native-country=Holand-Netherlands",
+      "native-country=Honduras",
+      "native-country=Hong",
+      "native-country=Hungary",
+      "native-country=India",
+      "native-country=Iran",
+      "native-country=Ireland",
+      "native-country=Italy",
+      "native-country=Jamaica",
+      "native-country=Japan",
+      "native-country=Laos",
+      "native-country=Mexico",
+      "native-country=Nicaragua",
+      "native-country=Outlying-US(Guam-USVI-etc)",
+      "native-country=Peru",
+      "native-country=Philippines",
+      "native-country=Poland",
+      "native-country=Portugal",
+      "native-country=Puerto-Rico",
+      "native-country=Scotland",
+      "native-country=South",
+      "native-country=Taiwan",
+      "native-country=Thailand",
+      "native-country=Trinadad&Tobago",
+      "native-country=United-States",
+      "native-country=Vietnam",
+      "native-country=Yugoslavia",
+      "native-country=__missing__"
+    ],
+    "protected_attributes": [
+      "sex",
+      "race"
+    ]
+  },
+  "metrics": {
+    "accuracy": 0.873,
+    "precision": 0.7824,
+    "recall": 0.6499,
+    "f1": 0.71,
+    "brier": 0.0874,
+    "roc_auc": 0.9292,
+    "log_loss": 0.2748
+  },
+  "fairness": [
+    {
+      "attribute": "sex",
+      "reliable": true,
+      "smallest_group": 4064,
+      "min_group_size": 30,
+      "groups": [
+        {
+          "group": "Male",
+          "n": 8147,
+          "positive_rate": 0.2562,
+          "tpr": 0.6597,
+          "fpr": 0.0802,
+          "ece": 0.008,
+          "brier": 0.1079
+        },
+        {
+          "group": "Female",
+          "n": 4064,
+          "positive_rate": 0.0837,
+          "tpr": 0.596,
+          "fpr": 0.0202,
+          "ece": 0.0043,
+          "brier": 0.0462
+        }
+      ],
+      "metrics": [
+        {
+          "name": "demographic_parity_difference",
+          "value": 0.1725,
+          "threshold": 0.1,
+          "passed": false,
+          "rule": "max-min positive rate <= 0.1"
+        },
+        {
+          "name": "disparate_impact_ratio",
+          "value": 0.3266,
+          "threshold": 0.8,
+          "passed": false,
+          "rule": "min/max positive rate >= 0.8"
+        },
+        {
+          "name": "equalized_odds_difference",
+          "value": 0.0637,
+          "threshold": 0.1,
+          "passed": true,
+          "rule": "max TPR/FPR spread <= 0.1"
+        },
+        {
+          "name": "calibration_gap",
+          "value": 0.0036,
+          "threshold": 0.1,
+          "passed": true,
+          "rule": "max-min ECE <= 0.1"
+        }
+      ]
+    },
+    {
+      "attribute": "race",
+      "reliable": true,
+      "smallest_group": 103,
+      "min_group_size": 30,
+      "groups": [
+        {
+          "group": "White",
+          "n": 10449,
+          "positive_rate": 0.2126,
+          "tpr": 0.6584,
+          "fpr": 0.0598,
+          "ece": 0.0057,
+          "brier": 0.091
+        },
+        {
+          "group": "Black",
+          "n": 1175,
+          "positive_rate": 0.0817,
+          "tpr": 0.5234,
+          "fpr": 0.0277,
+          "ece": 0.0109,
+          "brier": 0.0506
+        },
+        {
+          "group": "Asian-Pac-Islander",
+          "n": 371,
+          "positive_rate": 0.2507,
+          "tpr": 0.6162,
+          "fpr": 0.1176,
+          "ece": 0.0544,
+          "brier": 0.1208
+        },
+        {
+          "group": "Amer-Indian-Eskimo",
+          "n": 113,
+          "positive_rate": 0.0796,
+          "tpr": 0.5385,
+          "fpr": 0.02,
+          "ece": 0.0578,
+          "brier": 0.0613
+        },
+        {
+          "group": "Other",
+          "n": 103,
+          "positive_rate": 0.0777,
+          "tpr": 0.5333,
+          "fpr": 0.0,
+          "ece": 0.0673,
+          "brier": 0.0511
+        }
+      ],
+      "metrics": [
+        {
+          "name": "demographic_parity_difference",
+          "value": 0.173,
+          "threshold": 0.1,
+          "passed": false,
+          "rule": "max-min positive rate <= 0.1"
+        },
+        {
+          "name": "disparate_impact_ratio",
+          "value": 0.3098,
+          "threshold": 0.8,
+          "passed": false,
+          "rule": "min/max positive rate >= 0.8"
+        },
+        {
+          "name": "equalized_odds_difference",
+          "value": 0.135,
+          "threshold": 0.1,
+          "passed": false,
+          "rule": "max TPR/FPR spread <= 0.1"
+        },
+        {
+          "name": "calibration_gap",
+          "value": 0.0616,
+          "threshold": 0.1,
+          "passed": true,
+          "rule": "max-min ECE <= 0.1"
+        }
+      ]
+    }
+  ],
+  "global_importance": [
+    {
+      "feature": "marital-status=Married-civ-spouse",
+      "importance": 1.1498,
+      "rank": 1
+    },
+    {
+      "feature": "age",
+      "importance": 0.8901,
+      "rank": 2
+    },
+    {
+      "feature": "capital-gain",
+      "importance": 0.5632,
+      "rank": 3
+    },
+    {
+      "feature": "education-num",
+      "importance": 0.4742,
+      "rank": 4
+    },
+    {
+      "feature": "hours-per-week",
+      "importance": 0.315,
+      "rank": 5
+    },
+    {
+      "feature": "sex=Female",
+      "importance": 0.1726,
+      "rank": 6
+    },
+    {
+      "feature": "capital-loss",
+      "importance": 0.1648,
+      "rank": 7
+    },
+    {
+      "feature": "relationship=Own-child",
+      "importance": 0.1265,
+      "rank": 8
+    },
+    {
+      "feature": "marital-status=Never-married",
+      "importance": 0.1079,
+      "rank": 9
+    },
+    {
+      "feature": "occupation=Exec-managerial",
+      "importance": 0.1037,
+      "rank": 10
+    },
+    {
+      "feature": "occupation=Prof-specialty",
+      "importance": 0.0905,
+      "rank": 11
+    },
+    {
+      "feature": "occupation=Other-service",
+      "importance": 0.0692,
+      "rank": 12
+    },
+    {
+      "feature": "occupation=Machine-op-inspct",
+      "importance": 0.0601,
+      "rank": 13
+    },
+    {
+      "feature": "occupation=Handlers-cleaners",
+      "importance": 0.0492,
+      "rank": 14
+    },
+    {
+      "feature": "race=Black",
+      "importance": 0.0457,
+      "rank": 15
+    }
+  ],
+  "generated_at": "2026-10-27T12:24:31+00:00",
+  "generator": "model-audit 0.1.0"
+}

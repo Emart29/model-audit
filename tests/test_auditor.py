@@ -105,8 +105,8 @@ def test_string_labels_are_mapped_to_binary():
 
 
 def test_torch_adapter_makes_a_module_auditable():
-    import torch
-    from torch import nn
+    torch = pytest.importorskip("torch", reason="torch is optional; install it to test the adapter")
+    nn = torch.nn
 
     from model_audit.adapters import TorchClassifier
 

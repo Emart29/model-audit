@@ -61,6 +61,41 @@ Caveats, stated up front:
   guidance, not laws. They are arguments to every function, and the report prints the ones
   used.
 
+![Overview: metrics, ranked SHAP importance, calibration bins and every fairness check with its smallest group](docs/images/overview.png)
+
+<details>
+<summary>Fairness by group, and a single row explained</summary>
+
+![Fairness tab: per-group rates with n, and the warning shown when a group is too small](docs/images/fairness.png)
+
+![Explain a row: local contributions, an anchor with precision and coverage, and an honest "no flip" counterfactual](docs/images/explain-row.png)
+
+</details>
+
+---
+
+## What broke
+
+These are the bugs that would have made the published output wrong. All were found by
+running the full audit and looking at it, after all 38 tests had passed.
+
+- **Counterfactuals suggested sentinel values.** Candidate values came from each column's
+  0/25/50/75/100th percentiles. Capital-gain is zero up to the 75th percentile, so the only
+  alternative ever tried was the maximum, 99,999, which is the dataset's cap code and not a
+  real income. Every rejected applicant was told to "raise capital-gain from 0 to 99,999".
+  The grid now runs from the 1st to the 99th percentile, and a test pins it.
+- **The fix exposed a second problem.** With the cap gone, every row got the same advice:
+  "have $15,024 of capital gains". That is true for the model and useless to a person, because
+  capital gain measures wealth, not a choice. The demo now treats capital gain and loss as
+  non-actionable. The search then proposes changes to education, hours, occupation and sector,
+  and returns nothing for rows it cannot honestly flip: 17 of the first 40 rejected rows.
+- **The importance chart was not ranked.** The UI's bar chart sorted features alphabetically,
+  so `age` appeared first and `sex=Female` last. Charts are now drawn in value order.
+- **The demo disagreed with this README.** It defaulted to a 12,000-row sample. That left
+  26 people in the smallest race group and moved race equalized-odds from 0.135 to 0.647. The
+  UI did warn about it, but only on one tab. The demo now defaults to the full dataset, and
+  every check carries its smallest group's n.
+
 ---
 
 ## Architecture
@@ -119,6 +154,8 @@ Caveats, stated up front:
   counterfactuals need names a person can act on. `Encoder` is the only bridge.
 - **Small groups are not hidden.** `AttributeAudit.reliable` is false below `min_group_size`,
   and both the report and the UI say so.
+- **Counterfactual candidates stop at the 1st and 99th percentiles.** Raw extremes are often
+  caps or sentinel codes, and a suggestion to move to one is not advice.
 - **Kernel SHAP is capped.** Above 40 features on a non-tree model it would cost too much,
   so permutation importance runs instead and the report says so rather than claiming SHAP.
 
@@ -213,7 +250,7 @@ model-audit/
 │   └── cli.py              # demo + serve
 ├── app/streamlit_app.py
 ├── examples/               # a committed audit report and model card
-├── tests/                  # 38 tests, known-answer where possible
+├── tests/                  # 39 tests, known-answer where possible
 └── reports/                # generated (gitignored)
 ```
 
@@ -225,7 +262,7 @@ model-audit/
 pytest
 ```
 
-38 tests. The fairness and calibration tests use constructed cases with hand-computed
+39 tests. The fairness and calibration tests use constructed cases with hand-computed
 answers (a 0.9-confidence model that is right half the time has ECE 0.4 and Brier 0.41). The
 explanation tests check properties rather than snapshots: the local surrogate recovers the
 sign of a linear model's coefficients, its contributions reconstruct the prediction, and the

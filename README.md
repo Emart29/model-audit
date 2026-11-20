@@ -43,7 +43,9 @@ times the rate of women. That is the point of the project: accuracy and calibrat
 imply fairness, and a report that only shows the first two is not an audit.
 
 One more finding from the explanations: `sex=Female` is the **6th most important feature** by
-mean absolute SHAP (0.173), above capital loss and every occupation indicator. The model is
+mean absolute SHAP: 0.176 in log-odds over all 12,211 held-out rows, above capital loss and every
+occupation indicator. The rank is stable: 6th on the full set and on every 500-row sample
+checked (the report's ranking uses a 500-row sample for speed, which gives 0.173). The model is
 not inferring sex from proxies; it is using the column.
 
 Caveats, stated up front:

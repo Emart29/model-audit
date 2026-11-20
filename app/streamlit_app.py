@@ -20,10 +20,13 @@ from model_audit import ModelAuditor  # noqa: E402
 from model_audit.datasets import ADULT_CATEGORICAL, load_adult, make_synthetic  # noqa: E402
 from model_audit.preprocessing import fit_encoder  # noqa: E402
 
-IMMUTABLE_DEFAULT = ["age", "sex", "race", "native-country", "marital-status", "relationship"]
+IMMUTABLE_DEFAULT = [
+    "age", "sex", "race", "native-country", "marital-status", "relationship",
+    "capital-gain", "capital-loss",
+]
 
 
-@st.cache_resource(show_spinner="Training the modelâ€¦")
+@st.cache_resource(show_spinner="Training the model…")
 def build(sample: int) -> tuple[ModelAuditor, pd.DataFrame]:
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.model_selection import train_test_split
@@ -56,7 +59,7 @@ def build(sample: int) -> tuple[ModelAuditor, pd.DataFrame]:
     return auditor, raw_test
 
 
-@st.cache_resource(show_spinner="Training the synthetic modelâ€¦")
+@st.cache_resource(show_spinner="Training the synthetic model…")
 def build_synthetic() -> tuple[ModelAuditor, pd.DataFrame]:
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import train_test_split
@@ -84,6 +87,7 @@ def build_synthetic() -> tuple[ModelAuditor, pd.DataFrame]:
 
 
 def fairness_frame(audits) -> pd.DataFrame:
+    """One row per check, carrying the smallest group's n so no gap is read without it."""
     rows = []
     for audit in audits:
         for metric in audit.metrics:
@@ -94,13 +98,37 @@ def fairness_frame(audits) -> pd.DataFrame:
                     "value": round(metric.value, 3),
                     "threshold": metric.threshold,
                     "result": "pass" if metric.passed else "FAIL",
+                    "smallest group n": audit.smallest_group,
+                    "reliable": "yes" if audit.reliable else "no, indicative only",
                 }
             )
     return pd.DataFrame(rows)
 
 
+def ranked_bars(frame: pd.DataFrame, label: str, value: str) -> None:
+    """Horizontal bars in value order.
+
+    ``st.bar_chart`` orders categories alphabetically, which makes a ranking
+    chart read as if the first feature alphabetically were the most important.
+    """
+    import altair as alt
+
+    order = frame.reindex(frame[value].abs().sort_values(ascending=False).index)[label].tolist()
+    chart = (
+        alt.Chart(frame)
+        .mark_bar()
+        .encode(
+            x=alt.X(f"{value}:Q", title=value),
+            y=alt.Y(f"{label}:N", sort=order, title=None, axis=alt.Axis(labelLimit=260, labelOverlap=False)),
+            tooltip=[label, alt.Tooltip(f"{value}:Q", format=".3f")],
+        )
+        .properties(height=max(120, 30 * len(frame)))
+    )
+    st.altair_chart(chart, width="stretch")
+
+
 def main() -> None:
-    st.set_page_config(page_title="model-audit", page_icon="ðŸ”", layout="wide")
+    st.set_page_config(page_title="model-audit", page_icon="🔍", layout="wide")
     st.title("model-audit")
     st.caption("Explain any model, audit it for bias, and generate the model card.")
 
@@ -108,7 +136,9 @@ def main() -> None:
         dataset = st.radio("Dataset", ["UCI Adult", "Synthetic hiring"], index=0)
         if dataset == "UCI Adult":
             sample = st.select_slider(
-                "Rows", options=[4000, 8000, 12000, 20000, 48842], value=12000
+                "Rows", options=[4000, 8000, 12000, 20000, 48842], value=48842,
+                help="The full dataset reproduces the README. Smaller samples shrink the "
+                "minority race groups below the reliability floor.",
             )
             auditor, raw = build(int(sample))
         else:
@@ -139,16 +169,18 @@ def main() -> None:
             if key in metrics:
                 column.metric(key.upper(), f"{metrics[key]:.3f}")
         st.write(
-            f"{auditor.X.shape[0]:,} held-out rows Â· {auditor.X.shape[1]} features Â· "
-            f"ECE {calibration['ece']:.3f} Â· Brier {calibration['brier']:.3f}"
+            f"{auditor.X.shape[0]:,} held-out rows · {auditor.X.shape[1]} features · "
+            f"ECE {calibration['ece']:.3f} · Brier {calibration['brier']:.3f}"
         )
         left, right = st.columns([3, 2])
         with left:
             st.subheader("Top features")
             top = pd.DataFrame(
                 [{"feature": f.feature, "importance": f.importance} for f in importance[:12]]
-            ).set_index("feature")
-            st.bar_chart(top)
+            )
+            ranked_bars(top, "feature", "importance")
+            if importance:
+                st.caption(f"Mean absolute contribution · method: {importance[0].method}")
         with right:
             st.subheader("Calibration")
             bins = pd.DataFrame(calibration["bins"])
@@ -185,7 +217,7 @@ def main() -> None:
                 ]
             )
             st.dataframe(groups, hide_index=True, width="stretch")
-            st.bar_chart(groups.set_index("group")[["positive rate"]])
+            ranked_bars(groups[["group", "positive rate"]], "group", "positive rate")
             checks = fairness_frame([audit])
             st.dataframe(checks, hide_index=True, width="stretch")
 
@@ -195,13 +227,13 @@ def main() -> None:
         )
         explanation = auditor.local(int(index))
         st.write(
-            f"Prediction **{explanation.prediction}** Â· probability "
-            f"**{explanation.probability:.3f}** Â· surrogate RÂ² {explanation.r2:.3f}"
+            f"Prediction **{explanation.prediction}** · probability "
+            f"**{explanation.probability:.3f}** · surrogate R² {explanation.r2:.3f}"
         )
         contributions = pd.DataFrame(
             [{"feature": c.feature, "contribution": c.value} for c in explanation.contributions[:12]]
-        ).set_index("feature")
-        st.bar_chart(contributions)
+        )
+        ranked_bars(contributions, "feature", "contribution")
 
         left, right = st.columns(2)
         with left:
@@ -209,7 +241,7 @@ def main() -> None:
             anchor = auditor.anchors(int(index))
             st.code(anchor.text())
             st.write(
-                f"precision {anchor.precision:.3f} Â· coverage {anchor.coverage:.3f} Â· "
+                f"precision {anchor.precision:.3f} · coverage {anchor.coverage:.3f} · "
                 f"n={anchor.n_matched}"
             )
             if not anchor.meets_target:
@@ -220,9 +252,9 @@ def main() -> None:
                 results = auditor.counterfactuals(int(index), k=3, immutable=immutable)
                 if results:
                     for result in results:
-                        changes = ", ".join(f"{f}: {a!r} â†’ {b!r}" for f, a, b in result.changes)
+                        changes = ", ".join(f"{f}: {a!r} → {b!r}" for f, a, b in result.changes)
                         st.write(
-                            f"{changes} â€” p {result.original_probability:.3f} â†’ "
+                            f"{changes} — p {result.original_probability:.3f} → "
                             f"{result.counterfactual_probability:.3f}"
                         )
                 else:

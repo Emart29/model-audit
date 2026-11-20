@@ -116,7 +116,7 @@ Three rows: the most confident positive, the most confident negative, and the ro
 
 **Counterfactual:** education-num: 10 → 9.0 — p goes from 0.500 to 0.403 (distance 0.07).
 
-**Counterfactual:** hours-per-week: 65 → 99.0 — p goes from 0.500 to 0.351 (distance 0.35).
+**Counterfactual:** education-num: 10 → 3.0 — p goes from 0.500 to 0.203 (distance 0.47).
 
 ### Row 5024 — predicted 0 (p=0.000)
 
@@ -146,7 +146,7 @@ Three rows: the most confident positive, the most confident negative, and the ro
 
 **Anchor:** `education-num > 13.0 AND marital-status=Married-civ-spouse AND hours-per-week > 25.0` — precision 0.956, coverage 0.051 (n=619).
 
-**Counterfactual:** capital-gain: 15024 → 0.0, education-num: 15 → 16.0, hours-per-week: 50 → 1.0, occupation: 'Prof-specialty' → 'Handlers-cleaners' — p goes from 1.000 to 0.434 (distance 1.72).
+**Counterfactual:** none found within the allowed changes.
 
 ## Method and caveats
 

@@ -1,6 +1,6 @@
 # Model Card — adult-income-hgb 0.1.0
 
-_Generated 2026-10-27T12:24:31+00:00 by model-audit 0.1.0._
+_Generated 2026-11-20T10:49:25+00:00 by model-audit 0.1.0._
 
 ## Model details
 

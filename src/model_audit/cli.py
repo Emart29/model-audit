@@ -12,7 +12,12 @@ from pathlib import Path
 
 from .preprocessing import fit_encoder
 
-IMMUTABLE = ("age", "sex", "race", "native-country", "marital-status", "relationship")
+# Protected or fixed characteristics, plus capital gain and loss: those measure
+# wealth rather than a choice, and the search otherwise reaches for them first.
+IMMUTABLE = (
+    "age", "sex", "race", "native-country", "marital-status", "relationship",
+    "capital-gain", "capital-loss",
+)
 
 
 def build_demo(sample: int | None = None, seed: int = 0):

@@ -20,6 +20,9 @@ import pandas as pd
 
 MISSING_LEVEL = "__missing__"
 
+#: Percentiles recorded per numeric column and used as counterfactual candidates.
+QUANTILE_GRID = (0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
+
 
 @dataclass
 class Encoder:
@@ -115,10 +118,14 @@ def fit_encoder(
             float(series.min()) if series.notna().any() else 0.0,
             float(series.max()) if series.notna().any() else 0.0,
         )
+        # Counterfactual candidates come from this grid. It stops at the 1st and
+        # 99th percentiles because the raw extremes are often caps or sentinel
+        # codes (Adult tops capital-gain out at 99,999), and a suggestion to move
+        # to one is not advice anyone can act on.
         quantiles = (
-            series.quantile([0.0, 0.25, 0.5, 0.75, 1.0]).to_numpy(dtype=float)
+            series.quantile(QUANTILE_GRID).to_numpy(dtype=float)
             if series.notna().any()
-            else np.zeros(5)
+            else np.zeros(len(QUANTILE_GRID))
         )
         numeric_quantiles[column] = tuple(float(q) for q in quantiles)
 

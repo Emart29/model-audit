@@ -86,3 +86,24 @@ def test_distance_prefers_the_smaller_move():
 
     distances = [r.distance for r in results]
     assert distances == sorted(distances)
+
+
+def test_never_suggests_a_capped_extreme():
+    # Mostly zeros, a realistic tail, and one sentinel cap at 99,999 — the shape
+    # of capital-gain in the Adult census data.
+    rng = np.random.default_rng(0)
+    gain = np.where(rng.random(1000) < 0.9, 0.0, rng.uniform(1_000, 20_000, 1000))
+    gain[:5] = 99_999.0
+    df = pd.DataFrame({"gain": gain})
+    encoder = fit_encoder(df, [])
+
+    def gain_model(X: np.ndarray) -> np.ndarray:
+        return 1.0 / (1.0 + np.exp(-(X[:, 0] - 5_000.0) / 500.0))
+
+    results = generate_counterfactuals(gain_model, encoder, {"gain": 0.0}, k=3)
+
+    assert results, "a realistic gain should flip this model"
+    for result in results:
+        for _, _, new in result.changes:
+            assert new < 99_999.0
+            assert new <= float(np.quantile(gain, 0.99)) + 1e-9

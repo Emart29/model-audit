@@ -2,6 +2,12 @@
 
 Explain any fitted model, audit it for bias, and generate the model card — from one object.
 
+[![CI](https://github.com/Emart29/model-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/Emart29/model-audit/actions/workflows/ci.yml)
+
+**Live demo: [model-audit.streamlit.app](https://model-audit.streamlit.app)** — the full audit on
+the Adult census data, reproducing every number below. The first load trains the model and takes
+about a minute; an idle app sleeps and wakes on the next visit.
+
 Most portfolios show a model being built. This one shows a model being **audited**, which is
 the step that decides whether it ships. Point it at a fitted scikit-learn, XGBoost or PyTorch
 model and it produces global and local explanations, a fairness audit, counterfactuals,

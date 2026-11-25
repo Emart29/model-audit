@@ -8,6 +8,10 @@ Explain any fitted model, audit it for bias, and generate the model card — fro
 the Adult census data, reproducing every number below. The first load trains the model and takes
 about a minute; an idle app sleeps and wakes on the next visit.
 
+**Write-up:** [My Model Was 87% Accurate and Almost Perfectly Calibrated. It Still Selected Men at
+Three Times the Rate of Women](https://medium.com/towards-artificial-intelligence/my-model-was-87-accurate-and-almost-perfectly-calibrated-d7732cd516ef)
+(Towards AI)
+
 Most portfolios show a model being built. This one shows a model being **audited**, which is
 the step that decides whether it ships. Point it at a fitted scikit-learn, XGBoost or PyTorch
 model and it produces global and local explanations, a fairness audit, counterfactuals,
